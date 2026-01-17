@@ -1,0 +1,30 @@
+html, body {
+  background-color: rgb(9, 9, 9);
+  color: rgb(235, 235, 235);
+
+  /* background-color: rgb(255, 242, 0); */
+  /* color: rgb(0, 0, 0); */
+
+  font-family: "Roboto", sans-serif;
+  scroll-behavior: smooth;
+}
+
+body {
+  max-width: 800px;
+  padding: 0 15px;
+  margin: 30px auto;
+}
+
+h1, h2, h3, h4, h5, h6 {
+  letter-spacing: -0.05em;
+}
+
+ul, ol {
+  padding-left: revert;
+  list-style: revert;
+  margin: 8px 0px;
+}
+
+a {
+  text-decoration: underline;
+}

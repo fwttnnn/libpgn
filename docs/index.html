@@ -1,0 +1,281 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <link rel="stylesheet" href="index.css">
+  <link rel="stylesheet" href="https://unpkg.com/lenis@1.3.17/dist/lenis.css">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Roboto:ital,wght@0,100..900;1,100..900&display=swap" rel="stylesheet">
+  <script src="https://cdn.jsdelivr.net/npm/@tailwindcss/browser@4"></script>
+  <script src="https://unpkg.com/lenis@1.3.17/dist/lenis.min.js"></script> 
+  <script defer>
+    const lenis = new Lenis({
+      autoRaf: true,
+    })
+  </script>
+  <title>libpgn</title>
+</head>
+<body>
+  <header>
+    <h1 class="text-4xl font-bold">
+      libpgn
+    </h1>
+    <span class="text-sm text-neutral-500">PGN FILE PARSER</span>
+  </header>
+  <main class="my-5">
+    <div class="my-8">
+      <h2 class="text-2xl my-2">Overview</h2>
+      <ol>
+        <li><a href="#download">Download</a></li>
+        <li><a href="#installation">Installation</a></li>
+        <li><a href="#test">Test</a></li>
+        <li><a href="#pgn-file-structure">PGN File Structure</a></li>
+        <li><a href="#usage">Usage (In a Nutshell)</a></li>
+        <li><a href="#accessing-the-parsed-information">Accessing the Parsed Information</a></li>
+        <li><a href="#library-structure">Library Structure</a></li>
+        <li><a href="#ffi">Foreign Function Interface (FFI)</a></li>
+        <li><a href="#examples">Examples</a></li>
+      </ol>
+    </div>
+    <div class="my-8">
+      <h2 class="text-2xl my-2" id="download">Download</h2>
+      <p>Clone <code>libpgn</code> (latest) from the <code>git</code> repository:</p>
+      <ul>
+        <li><code>git clone https://github.com/fwttnnn/libpgn</code></li>
+      </ul>
+    </div>
+    <div class="my-8">
+      <h2 class="text-2xl my-2" id="installation">Installation</h2>
+      <p>Compile <code>libpgn</code> as shared & static library:</p>
+      <ul>
+        <li><code>cd libpgn</code></li>
+        <li><code>make</code></li>
+      </ul>
+    </div>
+    <div class="my-8">
+      <h2 class="text-2xl my-2" id="test">Test</h2>
+      <p>Make sure <code>libpgn</code> works correctly (optional):</p>
+      <ul>
+        <li><code>make test</code></li>
+      </ul>
+    </div>
+    <div class="my-8">
+      <h2 class="text-2xl my-2" id="pgn-file-structure">PGN File Structure</h2>
+      <pre class="my-2 text-sm bg-blue-950">[Event "RUDAR XXVIII - IM ROUND ROBIN"]
+[Site "Pozarevac, Serbia"]
+[Round "9.2"]
+[Date "2024.8.14"]
+[White "Ostojic, Nikola"]
+[Black "Ilincic, Zlatko"]
+[WhiteElo "2248"]
+[BlackElo "2274"]
+[Result "1/2-1/2"]</pre>
+      <pre class="my-2 text-sm bg-fuchsia-950">1.Nf3 d5 2.b3 c5 3.e3 Nc6 4.Bb2 Nf6 5.Bb5 Bd7 6.O-O e6 7.Bxc6 Bxc6 8.Ne5 1/2-1/2</pre>
+      <p><code>.pgn</code> file consists of 2 parts:</p>
+      <div class="pl-7 my-3">
+        <div class="flex items-center gap-2">
+          <div class="h-4 w-4 bg-blue-950"></div>
+          <p><a href="#metadata">Metadata</a> (Tag Pair)</p>
+        </div>
+        <div class="flex items-center gap-2">
+          <div class="h-4 w-4 bg-fuchsia-950"></div>
+          <p><a href="#moves">Moves</a> (Movetext)</p>
+        </div>
+      </div>
+    </div>
+    <div class="my-8">
+      <h2 class="text-2xl my-2" id="usage">Usage (In a Nutshell)</h2>
+      <pre class="my-2 text-sm bg-neutral-900">#include &lt;pgn.h&gt;
+#include &lt;stdio.h&gt;
+
+int main(void)
+{
+    pgn_t *<span class="text-green-400">pgn</span> = <span class="text-orange-400">pgn_init</span><span class="text-blue-400">()</span>;
+    <span class="text-orange-400">pgn_parse</span><span class="text-blue-400">(</span>pgn,
+              "[Event \"Global Championship Finals 2022\"]\n"
+              "[Result \"*\"]\n"
+              "\n"
+              "1. e4 e5 2. Ke2? *"<span class="text-blue-400">)</span>;
+
+    <span class="text-orange-400">pgn_cleanup</span><span class="text-blue-400">(</span>pgn<span class="text-blue-400">)</span>;
+    return 0;
+}</pre>
+      <p>Let's iterate through every <code>pgn_*</code> functions:</p>
+      <ul>
+        <li><code class="text-orange-400">pgn_init</code>: allocates heap memory for the library</li>
+        <li><code class="text-orange-400">pgn_parse</code>: (core of the library) parses a <code>string</code> representation of a pgn file, and puts the information onto the <code class="text-green-400">pgn</code> variable</li>
+        <li><code class="text-orange-400">pgn_cleanup</code>: cleans up the allocated heap memory</li>
+      </ul>
+    </div>
+    <div class="my-8">
+      <h2 class="text-2xl my-2" id="accessing-the-parsed-information">Accessing the Parsed Information</h2>
+      <p>You can pull the parsed information through modules such as <a href="https://github.com/fwttnnn/libpgn/blob/master/metadata.h" target="_blank">metadata.h</a>, <a href="https://github.com/fwttnnn/libpgn/blob/master/score.h" target="_blank">score.h</a>, <a href="https://github.com/fwttnnn/libpgn/blob/master/moves.h" target="_blank">moves.h</a>, and more:</p>
+      <pre class="my-2 text-sm bg-neutral-900">#include &lt;pgn.h&gt;
+#include &lt;stdio.h&gt;
+
+int main(void)
+{
+    pgn_t *pgn = pgn_init();
+    pgn_parse(pgn,
+              "[Event \"Global Championship Finals 2022\"]\n"
+              "[Result \"*\"]\n"
+              "\n"
+              "1. e4 e5 2. Ke2? *");
+
+<span class="bg-teal-800">
+    printf("%s\n", pgn_metadata_get(pgn->metadata, "Event"));
+    printf("Featuring 'Bongcloud Attack'\n\n");
+
+    for (int i = 0; i < pgn->moves->length; i++) {
+        pgn_move_t white = pgn->moves->values[i].white;
+        pgn_move_t black = pgn->moves->values[i].black;
+        printf("%d.\n  %s\n  %s\n", i + 1, white.notation, black.notation);
+    }
+
+    printf("%s\n", pgn_score_to_string(pgn->score));
+</span>
+
+    pgn_cleanup(pgn);
+    return 0;
+}</pre>
+<p>Output:</p>
+<pre class="my-2 text-sm bg-neutral-900">
+Global Championship Finals 2022
+Featuring 'Bongcloud Attack'
+
+1.
+  e4
+  e5
+2.
+  Ke2?
+
+*
+</pre>
+    </div>
+    <div class="my-8">
+      <h2 class="text-2xl my-2" id="library-structure">Libray Structure</h2>
+      <p>Everything is self-documented. For starters, look into the <a href="https://github.com/fwttnnn/libpgn/blob/master/pgn.h" target="_blank">pgn.h</a> module:</p>
+      <pre class="my-2 text-sm bg-neutral-900">typedef struct pgn_t {
+    pgn_metadata_t *metadata;
+    pgn_moves_t *moves;
+    pgn_score_t score;
+} pgn_t;</pre>
+      <p>The data structure of <code>libpgn</code> resembles the PGN file structure (<a href="#pgn-file-structure">see 4.</a>) itself. If you're familiar with C, you can dig down (read the code) by yourself, since everything is self-documented.</p>
+      <br />
+      <p id="metadata">Metadata (<a href="https://github.com/fwttnnn/libpgn/blob/master/metadata.h" target="_blank">metadata.h</a>):</p>
+      <pre class="my-2 text-sm bg-neutral-900">typedef struct pgn_metadata_t {
+    __pgn_metadata_item_t *items;
+    size_t length, size;
+} pgn_metadata_t;</pre>
+      <pre class="my-2 text-sm bg-neutral-900">typedef struct __pgn_metadata_item_t {
+    pgn_buffer_t *key;
+    pgn_buffer_t *value;
+} __pgn_metadata_item_t;</pre>
+      <p>Basically a hash map.</p>
+      <pre class="my-2 text-sm bg-neutral-900">
+<span class="text-yellow-400">PGN_EXPORT</span> void pgn_metadata_insert(pgn_metadata_t *metadata, char *key, char *value);
+<span class="text-yellow-400">PGN_EXPORT</span> char *pgn_metadata_get(pgn_metadata_t *metadata, char *key);
+<span class="text-yellow-400">PGN_EXPORT</span> void pgn_metadata_delete(pgn_metadata_t *metadata, char *key);</pre>
+      <p>You can play with it using these functions. Generally, look for the one that has a <span class="text-yellow-400"><code>PGN_EXPORT</code></span> macro.</p>
+      <br />
+      <p id="moves">Moves (<a href="https://github.com/fwttnnn/libpgn/blob/master/moves.h" target="_blank">moves.h</a>):</p>
+      <pre class="my-2 text-sm bg-neutral-900">
+struct pgn_moves_t {
+    __pgn_moves_item_t *values;
+    size_t length;
+    size_t size;
+};</pre>
+      <pre class="my-2 text-sm bg-neutral-900">
+struct __pgn_moves_item_t {
+    pgn_move_t white;
+    pgn_move_t black;
+};</pre>
+      <pre class="my-2 text-sm bg-neutral-900">typedef struct pgn_move_t {
+    pgn_piece_t piece, promoted_to;
+    char notation[__PGN_MOVE_NOTATION_SIZE];
+    int castles;
+    bool captures;
+    bool en_passant;
+    pgn_check_t check;
+    pgn_coordinate_t from, dest;
+    <span class="text-violet-400">pgn_annotation_t</span> annotation;
+    <span class="text-red-400">pgn_comments_t</span> *comments;
+    <span class="text-teal-400">pgn_alternative_moves_t</span> *alternatives;
+} pgn_move_t;</pre>
+      <p>An array that holds each move, it supports: <span class="text-violet-400">annotation</span> (!!, ?!, ??, etc.), <span class="text-red-400">comments</span> ({hi}, {from libpgn}), <span class="text-teal-400">alternative moves</span> (69. Be4 <span class="text-teal-100">( 69. Be2 69... e4 )</span> 69... Rxe5?!), and more.</p>
+      <br />
+      <p>Quick tip: anything that has this signature (T *name) where T is a type is considered an array. The type name is usually plural (s).</p>
+    </div>
+    <div class="my-8">
+      <h2 class="text-2xl my-2" id="ffi">Foreign Function Interface (FFI)</h2>
+      <p>I am planning to add bindings for other languages (python, zig, etc.), there's one example for <a href="https://github.com/fwttnnn/szachy" target="_blank">ada</a>.</p>
+    </div>
+    <div class="my-8">
+      <h2 class="text-2xl my-2" id="examples">Examples</h2>
+      <p>You can find examples on the <a href="https://github.com/fwttnnn/libpgn/tree/master/tests" target="_blank">tests/</a>, and <a href="https://github.com/fwttnnn/libpgn/tree/master/bin" target="_blank">bin/</a> folders.</p>
+      <br />
+      <p>Here are softwares that uses <code>libpgn</code>:</p>
+      <ul>
+        <li><a href="https://github.com/fwttnnn/szachy" target="_blank"><code>szachy</code></a>: chess emulator written in ada</li>
+      </ul>
+    </div>
+    <br />
+    <br />
+    <br />
+    <br />
+    <br />
+    <br />
+    <br />
+    <br />
+    <br />
+    <br />
+    <br />
+    <br />
+    <br />
+    <br />
+    <br />
+    <br />
+    <br />
+    <br />
+    <br />
+    <br />
+    <br />
+    <br />
+    <br />
+    <br />
+    <br />
+    <br />
+    <br />
+    <br />
+    <br />
+    <br />
+    <br />
+    <br />
+    <br />
+    <br />
+    <br />
+    <br />
+    <br />
+    <br />
+    <br />
+    <br />
+    <br />
+    <br />
+    <br />
+    <br />
+    <br />
+    <br />
+    <br />
+    <br />
+    <br />
+    <br />
+    <br />
+    <br />
+    <br />
+    <br />
+    <br />
+  </main>
+</body>
+</html>
