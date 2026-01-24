@@ -65,6 +65,15 @@ size_t pgn_parse(pgn_t *pgn, char *str)
     pgn->metadata = __pgn_metadata_from_string(str + cursor, &cursor);
     pgn_cursor_skip_whitespace(str, &cursor);
 
+    /**
+     * NOTE: check if there's no move present.
+     * TODO: write a test suite for this layout: <METADATA><whitespace><SCORE>.
+     */
+    pgn->score = __pgn_score_from_string(str + cursor, &cursor);
+    if (pgn->score != PGN_SCORE_UNKNOWN) {
+        return cursor;
+    }
+
     pgn->moves = __pgn_moves_from_string(str + cursor, &cursor);
     pgn->score = __pgn_score_from_string(str + cursor, &cursor);
 
