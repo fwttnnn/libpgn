@@ -48,8 +48,48 @@ void test_parsing_pgn()
     pgn_cleanup(pgn);
 }
 
+void test_parsing_pgn_with_no_moves()
+{
+    pgn_t *pgn = pgn_init();
+    pgn_parse(pgn,
+        "[Event \"Ch City (open)\"]\n"
+        "[Site \"Frankfurt (Germany)\"]\n"
+        "\n"
+        "0-1");
+
+    suite6_assert(strcmp(pgn_metadata_get(pgn->metadata, "Event"), "Ch City (open)") == 0);
+    suite6_assert(strcmp(pgn_metadata_get(pgn->metadata, "Site"), "Frankfurt (Germany)") == 0);
+
+    suite6_assert(!pgn->moves);
+    suite6_assert(pgn->score == PGN_SCORE_BLACK_WON);
+    pgn_cleanup(pgn);
+
+    pgn = pgn_init();
+    pgn_parse(pgn,
+        "[Event \"Ch City (open)\"]\n"
+        "[Site \"Frankfurt (Germany)\"]\n"
+        "\n"
+        "1/2-1/2");
+    
+    suite6_assert(!pgn->moves);
+    suite6_assert(pgn->score == PGN_SCORE_DRAW);
+    pgn_cleanup(pgn);
+
+    pgn = pgn_init();
+    pgn_parse(pgn,
+        "[Event \"Ch City (open)\"]\n"
+        "[Site \"Frankfurt (Germany)\"]\n"
+        "\n"
+        "0-1/2");
+    
+    suite6_assert(!pgn->moves);
+    suite6_assert(pgn->score == PGN_SCORE_WHITE_FORFEIT);
+    pgn_cleanup(pgn);
+}
+
 int main(void)
 {
     test_parsing_pgn();
+    test_parsing_pgn_with_no_moves();
     return 0;
 }
